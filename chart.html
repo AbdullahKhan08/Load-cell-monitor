@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Manual Load Test Chart Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        text-align: center;
+        padding: 20px;
+      }
+      #chartContainer {
+        max-width: 800px;
+        margin: auto;
+      }
+      canvas {
+        background: white;
+        border: 1px solid #ccc;
+      }
+      button {
+        margin-top: 20px;
+        padding: 10px 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Load vs Time Chart (Manual Entry)</h2>
+    <div id="chartContainer">
+      <canvas id="loadChart" width="800" height="400"></canvas>
+    </div>
+    <button id="saveBtn">Save Chart as PNG</button>
+
+    <script>
+      const ctx = document.getElementById('loadChart').getContext('2d')
+      const chartData = {
+        labels: [
+          0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85,
+          90,
+        ],
+        datasets: [
+          {
+            label: 'Load (tons)',
+            data: [
+              0, 10, 20, 28, 35, 39, 42, 44, 46, 47, 48, 48.5, 49, 49.2, 49.5,
+              49.7, 50, 50, 50,
+            ],
+            borderColor: 'blue',
+            backgroundColor: 'rgba(0, 0, 255, 0.1)',
+            tension: 0.3,
+            pointRadius: 3,
+          },
+        ],
+      }
+
+      const loadChart = new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+          responsive: false,
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: 'Load vs Time During Jack Load Test',
+            },
+          },
+          scales: {
+            x: {
+              title: { display: true, text: 'Time (seconds)' },
+            },
+            y: {
+              title: { display: true, text: 'Load (tons)' },
+              suggestedMin: 0,
+              suggestedMax: 55,
+            },
+          },
+        },
+      })
+
+      document.getElementById('saveBtn').addEventListener('click', () => {
+        html2canvas(document.getElementById('chartContainer')).then(
+          (canvas) => {
+            const link = document.createElement('a')
+            link.download = 'load_test_chart.png'
+            link.href = canvas.toDataURL()
+            link.click()
+          }
+        )
+      })
+    </script>
+  </body>
+</html>

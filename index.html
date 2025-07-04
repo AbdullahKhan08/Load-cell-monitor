@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SAMAA Aerospace Load Cell Monitor</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', sans-serif;
+        background: #f4f6f8;
+        margin: 0;
+        padding: 0;
+        color: #333;
+      }
+
+      /* NAVBAR */
+      .navbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #0a3a71;
+        color: white;
+        padding: 10px 20px;
+      }
+      .navbar .logo {
+        display: flex;
+        align-items: center;
+      }
+      .navbar img {
+        width: 140px;
+        margin-right: 10px;
+      }
+      .navbar h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .nav-links {
+        display: flex;
+        gap: 15px;
+      }
+      .nav-links a {
+        color: white;
+        text-decoration: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .nav-links a:hover,
+      .nav-links a.active {
+        background-color: #09509c;
+      }
+
+      /* PAGE CONTAINERS */
+      .page {
+        display: none;
+        padding: 20px;
+        text-align: center;
+      }
+      .page.active {
+        display: block;
+      }
+
+      /* MAIN ELEMENTS */
+      h1 {
+        color: #0a3a71;
+        margin-bottom: 10px;
+      }
+      h2#loadValue {
+        font-size: 48px;
+        margin: 15px 0;
+        color: #0a3a71;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 8px;
+        font-size: 16px;
+        background: #0a3a71;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      button:hover:not(:disabled) {
+        background: #09509c;
+      }
+      #clearDataButton {
+        background-color: #ff4d4d;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      #clearDataButton:hover {
+        background-color: #f44646;
+      }
+      button:hover {
+        background: #09509c;
+      }
+
+      #status {
+        display: inline-block;
+        font-weight: 600;
+        font-size: 16px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        background: #e0e7ef;
+        color: #0a3a71;
+        margin-top: 15px;
+        transition: background 0.3s, color 0.3s;
+      }
+      h2#loadValue {
+        font-size: 48px;
+        text-align: center;
+        color: #0a3a71;
+        margin: 10px 0;
+      }
+
+      #logWrapper {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        background: white;
+        border-radius: 4px;
+        margin: 20px auto;
+        width: 60%;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        position: sticky;
+        top: 0;
+        background: #0a3a71;
+        color: white;
+        z-index: 2;
+      }
+      tr:hover {
+        background: #f1f1f1;
+      }
+
+      form {
+        width: 90%;
+        max-width: 1050px;
+        margin: 25px auto;
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px 30px;
+      }
+
+      form label {
+        font-weight: 600;
+        font-size: 14px;
+        text-align: left;
+        color: #333;
+      }
+
+      form input {
+        margin-top: 5px;
+        padding: 10px 12px;
+        font-size: 14px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        transition: border 0.2s, box-shadow 0.2s;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      form input:focus {
+        border: 1px solid #0a3a71;
+        outline: none;
+        box-shadow: 0 0 3px rgba(10, 58, 113, 0.3);
+      }
+      #controlButtons {
+        text-align: center;
+        margin-top: 10px;
+      }
+      #loadChart {
+        max-width: 1300px;
+        margin: 20px auto;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="nav-links">
+        <a id="navHome" class="active">Home</a>
+        <a id="navReports">Reports</a>
+        <a id="navSettings">Settings</a>
+      </div>
+      <div class="logo">
+        <img src="assets/long-logo.png" alt="SAMAA Logo" />
+        <!-- <h2 id="companyName">Samaa Aerospace</h2> -->
+      </div>
+    </div>
+    <div id="homePage" class="page active">
+      <h1>SAMAA Aerospace Load Cell Monitor</h1>
+      <!-- 📌 Form Section -->
+      <form id="testForm">
+        <!-- Master Equipment -->
+        <label
+          >Load Cell Part No.<input type="text" name="loadCellPartNo" required
+        /></label>
+        <label
+          >Load Cell Serial No.<input
+            type="text"
+            name="loadCellSerialNo"
+            required
+        /></label>
+        <label
+          >Load Cell Model No.<input
+            type="text"
+            name="loadCellModelNo"
+            required
+        /></label>
+        <label
+          >Load Cell Last Calibration Date<input
+            type="date"
+            name="loadCellLastCalibrationDate"
+            required
+        /></label>
+        <label
+          >Load Cell Calibration Valid Upto<input
+            type="date"
+            name="loadCellCalibrationValidity"
+            required
+        /></label>
+        <label
+          >Display Part No.<input type="text" name="displayPartNo" required
+        /></label>
+        <label
+          >Display Model No.<input type="text" name="displayModelNo" required
+        /></label>
+        <label
+          >Display Serial No.<input type="text" name="displaySerialNo" required
+        /></label>
+        <label
+          >Display Last Calibration Date<input
+            type="date"
+            name="displayLastCalibrationDate"
+            required
+        /></label>
+        <label
+          >Display Calibration Valid Upto<input
+            type="date"
+            name="displayCalibrationValidity"
+            required
+        /></label>
+
+        <!-- Tested Equipment -->
+        <label
+          >Equipment Name<input type="text" name="equipmentName" required
+        /></label>
+        <label
+          >Type of Equipment<input type="text" name="typeOfEquipment" required
+        /></label>
+        <label
+          >Equipment Part No.<input type="text" name="equipmentPartNo" required
+        /></label>
+        <label
+          >Equipment Model No.<input
+            type="text"
+            name="equipmentModelNo"
+            required
+        /></label>
+        <label
+          >Equipment Serial No.<input
+            type="text"
+            name="equipmentSerialNo"
+            required
+        /></label>
+        <label
+          >Rated Load Capacity<input
+            type="number"
+            name="ratedLoadCapacity"
+            required
+        /></label>
+        <label>
+          Year of Manufacture
+          <input type="number" name="yearOfManufacture" required />
+        </label>
+        <label>Location<input type="text" name="location" required /></label>
+        <!-- <label>Test Date<input type="date" name="testDate" required /></label> -->
+
+        <!-- Personnel -->
+        <label>Tested By<input type="text" name="testedBy" required /></label>
+        <label
+          >Certified By<input type="text" name="certifiedBy" required
+        /></label>
+      </form>
+      <h2 id="loadValue">0.000 t</h2>
+      <p id="lastTimestamp">Last Update: --</p>
+      <div id="status">Status: Disconnected</div>
+
+      <div id="logWrapper">
+        <table id="dataTable">
+          <thead>
+            <tr>
+              <th style="width: 50%">Timestamp</th>
+              <th style="width: 25%">Load (kg)</th>
+              <th style="width: 25%">Load (t)</th>
+            </tr>
+          </thead>
+          <tbody id="dataTableBody"></tbody>
+        </table>
+      </div>
+      <div id="controlButtons">
+        <button id="startButton">Start Load Test</button>
+        <button id="stopButton">Stop Load Test</button>
+        <button id="downloadButton">Download Report</button>
+        <button id="clearDataButton">Clear Data</button>
+      </div>
+      <canvas id="loadChart" width="900" height="300"></canvas>
+    </div>
+
+    <div id="reportsPage" class="page">
+      <h2>Reports</h2>
+      <p>View and download previous test reports here.</p>
+      <!-- Future report list will appear here -->
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div id="settingsPage" class="page">
+      <h2>Settings</h2>
+      <p>Upload logo, set company name, and configure details.</p>
+      <!-- Future settings form will appear here -->
+    </div>
+
+    <!-- <img src="assets/logo.png" alt="SAMAA Aerospace Logo" /> -->
+
+    <script src="./renderer.js"></script>
+
+    <script>
+      // PAGE SWITCHING
+      function showPage(pageId) {
+        document
+          .querySelectorAll('.page')
+          .forEach((page) => page.classList.remove('active'))
+        document.getElementById(pageId).classList.add('active')
+
+        document
+          .querySelectorAll('.nav-links a')
+          .forEach((link) => link.classList.remove('active'))
+        if (pageId === 'homePage')
+          document.getElementById('navHome').classList.add('active')
+        if (pageId === 'reportsPage')
+          document.getElementById('navReports').classList.add('active')
+        if (pageId === 'settingsPage')
+          document.getElementById('navSettings').classList.add('active')
+      }
+
+      document
+        .getElementById('navHome')
+        .addEventListener('click', () => showPage('homePage'))
+      document
+        .getElementById('navReports')
+        .addEventListener('click', () => showPage('reportsPage'))
+      document
+        .getElementById('navSettings')
+        .addEventListener('click', () => showPage('settingsPage'))
+    </script>
+  </body>
+</html>
