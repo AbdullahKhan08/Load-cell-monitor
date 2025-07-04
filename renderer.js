@@ -3,15 +3,23 @@ const fs = require('fs')
 const path = require('path')
 const Chart = require('chart.js/auto')
 const PDFDocument = require('pdfkit')
+/** @type {import('./types').TestMetadata} */
+let testMetadata = {} // now type-safe
+
+/** @type {import('./types').ChartDataPoint[]} */
+let chartData = [] // type-safe
+
+/** @type {boolean} */
+let isPolling = false
+
+/** @type {number} */
+const POLLING_INTERVAL_MS = 1000
+
 const client = new ModbusRTU()
 let pollingInterval = null
-let chartData = [] // [{ time: 'HH:MM:SS', load: 0.000 }]
 let chartInstance = null
-let testMetadata = {} // store form data
-
 const form = document.getElementById('testForm')
 const startButton = document.getElementById('startButton')
-
 startButton.disabled = false
 stopButton.disabled = true
 
@@ -25,32 +33,125 @@ stopButton.disabled = true
 // })
 
 // Collect form data and save JSON
+// function oldCollectAndSaveMetadata() {
+//
+//   testMetadata = Object.fromEntries(formData.entries())
+//   const capacityRaw = formData.get('ratedLoadCapacity')
+//   const capacity = parseFloat(capacityRaw)
+//   if (isNaN(capacity)) {
+//     alert(
+//       '⚠️ Capacity value is invalid or missing. Please enter a valid number.'
+//     )
+//     return
+//   }
+//   // Add to formData for consistency
+
+//   const proofLoad = capacity * 1.1
+//   testMetadata.proofLoad = proofLoad.toFixed(2) // keep 2 decimals
+
+//   const reportsDir = path.join(__dirname, 'reports')
+//   if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir)
+
+//   const filename = `test_metadata_${new Date()
+//     .toISOString()
+//     .replace(/[:.]/g, '-')}.json`
+//   const filepath = path.join(reportsDir, filename)
+//   fs.writeFileSync(filepath, JSON.stringify(testMetadata, null, 2))
+
+//   console.log(`✅ Test metadata saved: ${filepath}`)
+// }
+
+/**
+ * Collects, validates, and saves form metadata into `testMetadata`.
+ * Adds computed fields: proofLoad (T), certificateValidity (dd/mm/yyyy).
+ */
+
+form.addEventListener('input', () => {
+  startButton.disabled = true // force re-save before start
+})
+
 function collectAndSaveMetadata() {
-  const formData = new FormData(form)
-  testMetadata = Object.fromEntries(formData.entries())
-  const capacityRaw = formData.get('ratedLoadCapacity')
-  const capacity = parseFloat(capacityRaw)
-  if (isNaN(capacity)) {
-    alert(
-      '⚠️ Capacity value is invalid or missing. Please enter a valid number.'
+  try {
+    const formData = new FormData(form)
+    const dataObj = Object.fromEntries(formData.entries())
+
+    // Validate required fields
+    const requiredFields = [
+      'loadCellPartNo',
+      'loadCellSerialNo',
+      'loadCellModelNo',
+      'loadCellLastCalibrationDate',
+      'loadCellCalibrationValidity',
+      'displayPartNo',
+      'displayModelNo',
+      'displaySerialNo',
+      'displayLastCalibrationDate',
+      'displayCalibrationValidity',
+      'equipmentName',
+      'typeOfEquipment',
+      'equipmentPartNo',
+      'equipmentModelNo',
+      'equipmentSerialNo',
+      'ratedLoadCapacity',
+      'yearOfManufacture',
+      'location',
+      'testedBy',
+      'certifiedBy',
+    ]
+
+    const missingFields = requiredFields.filter(
+      (field) => !dataObj[field] || dataObj[field].trim() === ''
     )
-    return
+    if (missingFields.length > 0) {
+      alert(`⚠️ Please fill all required fields:\n${missingFields.join(', ')}`)
+      updateStatus('Status: Incomplete Data.', 'error')
+      return
+    }
+
+    // Validate ratedLoadCapacity
+    const capacityRaw = dataObj.ratedLoadCapacity
+    const capacity = parseFloat(capacityRaw)
+    if (isNaN(capacity) || capacity <= 0) {
+      alert('⚠️ Rated Load Capacity must be a valid positive number.')
+      updateStatus('Status: Invalid Rated Load Capacity.', 'error')
+      return
+    }
+
+    // Compute proofLoad = 1.1 * capacity (in tons, 1 decimal)
+    const proofLoad = (capacity * 1.1).toFixed(1)
+    dataObj.proofLoad = proofLoad // tons
+
+    // Compute certificateValidity (1 year from now)
+    const today = new Date()
+    const validityDate = new Date(today)
+    validityDate.setFullYear(today.getFullYear() + 1)
+    const validityDateStr = validityDate.toLocaleDateString('en-GB') // dd/mm/yyyy
+    dataObj.certificateValidity = validityDateStr
+
+    // Assign structured object globally
+    testMetadata = dataObj
+
+    // Save JSON for record
+    const reportsDir = path.join(__dirname, 'reports')
+    if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir)
+
+    const filename = `test_metadata_${new Date()
+      .toISOString()
+      .replace(/[:.]/g, '-')}.json`
+    const filepath = path.join(reportsDir, filename)
+
+    fs.writeFileSync(filepath, JSON.stringify(testMetadata, null, 2))
+
+    console.log(`✅ Test metadata saved: ${filepath}`)
+    updateStatus('✅ Metadata saved successfully.', 'success')
+
+    // Enable Start button after successful save
+    startButton.disabled = false
+  } catch (err) {
+    console.error('❌ Error in collectAndSaveMetadata:', err)
+    alert('❌ Failed to collect and save metadata. Check console for details.')
+    updateStatus('Status: Metadata save failed.', 'error')
   }
-  // Add to formData for consistency
-
-  const proofLoad = capacity * 1.1
-  testMetadata.proofLoad = proofLoad.toFixed(2) // keep 2 decimals
-
-  const reportsDir = path.join(__dirname, 'reports')
-  if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir)
-
-  const filename = `test_metadata_${new Date()
-    .toISOString()
-    .replace(/[:.]/g, '-')}.json`
-  const filepath = path.join(reportsDir, filename)
-  fs.writeFileSync(filepath, JSON.stringify(testMetadata, null, 2))
-
-  console.log(`✅ Test metadata saved: ${filepath}`)
 }
 
 async function startPolling() {
@@ -58,18 +159,23 @@ async function startPolling() {
   startButton.disabled = true
   stopButton.disabled = true
 
-  if (pollingInterval) {
+  if (isPolling) {
     console.warn('⚠️ Polling already in progress. Ignoring duplicate start.')
     alert('Polling is already running.')
     return
   }
 
   try {
-    collectAndSaveMetadata()
     updateStatus('Status: Connecting...', 'info')
 
     if (!client.isOpen) {
       await client.connectTCP('127.0.0.1', { port: 8502 })
+      //   await client.connectRTUBuffered('COM4', {
+      //     baudRate: 9600,
+      //     dataBits: 8,
+      //     stopBits: 1,
+      //     parity: 'none',
+      //   })
       client.setID(1)
 
       console.log('✅ Connected to Modbus server.')
@@ -89,15 +195,17 @@ async function startPolling() {
         const high = registers[0]
         const low = registers[1]
         const combined = (high << 16) | low // 32-bit combined value
-
         const loadKg = combined / 10 // DLC-6 scaling
         const loadTons = loadKg / 1000 // Display in tons
+        const loadKN = (loadKg * 9.80665) / 1000 // kg to kN conversion
+        // chartData.push({ time: timestamp, load: loadTons })
         chartData.push({ time: timestamp, load: loadTons })
+
         renderChart()
 
         document.getElementById('loadValue').innerText = `${loadTons.toFixed(
           3
-        )} t`
+        )} t / ${loadKN.toFixed(2)} kN`
 
         console.log(
           `✅ Live Load: ${loadKg.toFixed(1)} kg (${loadTons.toFixed(
@@ -116,6 +224,7 @@ async function startPolling() {
           <td>${timestamp}</td>
           <td>${loadKg.toFixed(1)} kg</td>
           <td>${loadTons.toFixed(3)} t</td>
+          <td>${loadKN.toFixed(2)} kN</td>
         `
         tableBody.appendChild(row)
         // Auto-scroll to bottom for live monitoring
@@ -123,24 +232,36 @@ async function startPolling() {
         logWrapper.scrollTop = logWrapper.scrollHeight
 
         console.log(
-          `✅ Load: ${loadKg.toFixed(1)} kg (${loadTons.toFixed(
+          `✅ Load: ${loadKg.toFixed(1)} kg | ${loadTons.toFixed(
             3
-          )} t) at ${timestamp}`
+          )} t | ${loadKN.toFixed(2)} kN at ${timestamp}`
         )
         // (Chart.js live graph will be added next)
       } catch (err) {
         console.error('⚠️ Polling error:', err)
         updateStatus('Status: Polling Error', 'error')
-        startButton.disabled = false
-        stopButton.disabled = true
+        cleanupPolling()
       }
-    }, 500) // 1-second polling
+    }, POLLING_INTERVAL_MS) // 1-second polling
   } catch (err) {
     console.error('❌ Connection error:', err)
     updateStatus('Status: Connection Failed', 'error')
-    startButton.disabled = false
-    stopButton.disabled = true
+    cleanupPolling()
   }
+}
+
+/** Safely stops polling, clears intervals, and resets state */
+function cleanupPolling() {
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+    pollingInterval = null
+  }
+  if (client.isOpen) {
+    client.close(() => console.log('ℹ️ Modbus client connection closed.'))
+  }
+  isPolling = false
+  startButton.disabled = false
+  stopButton.disabled = true
 }
 
 function updateStatus(text, statusType = 'info') {
@@ -701,6 +822,9 @@ function downloadReport() {
 // Button Bindings
 document.getElementById('startButton').addEventListener('click', startPolling)
 document.getElementById('stopButton').addEventListener('click', stopPolling)
+document.getElementById('saveMetadataButton').addEventListener('click', () => {
+  collectAndSaveMetadata()
+})
 document
   .getElementById('downloadButton')
   .addEventListener('click', downloadReport)

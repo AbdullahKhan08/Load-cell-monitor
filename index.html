@@ -210,54 +210,54 @@
       </div>
     </div>
     <div id="homePage" class="page active">
-      <h1>SAMAA Aerospace Load Cell Monitor</h1>
+      <h1>Samaa Aerospace Load Cell Monitor</h1>
       <!-- 📌 Form Section -->
       <form id="testForm">
         <!-- Master Equipment -->
         <label
-          >Load Cell Part No.<input type="text" name="loadCellPartNo" required
+          >LOAD CELL PART NO.<input type="text" name="loadCellPartNo" required
         /></label>
         <label
-          >Load Cell Serial No.<input
+          >LOAD CELL SERIAL NO.<input
             type="text"
             name="loadCellSerialNo"
             required
         /></label>
         <label
-          >Load Cell Model No.<input
+          >LOAD CELL MODEL NO.<input
             type="text"
             name="loadCellModelNo"
             required
         /></label>
         <label
-          >Load Cell Last Calibration Date<input
+          >LOAD CELL LAST CALIBRATION DATE<input
             type="date"
             name="loadCellLastCalibrationDate"
             required
         /></label>
         <label
-          >Load Cell Calibration Valid Upto<input
+          >LOAD CELL CALIBRATION VALID UPTO<input
             type="date"
             name="loadCellCalibrationValidity"
             required
         /></label>
         <label
-          >Display Part No.<input type="text" name="displayPartNo" required
+          >DISPLAY PART NO.<input type="text" name="displayPartNo" required
         /></label>
         <label
-          >Display Model No.<input type="text" name="displayModelNo" required
+          >DISPLAY MODEL NO.<input type="text" name="displayModelNo" required
         /></label>
         <label
-          >Display Serial No.<input type="text" name="displaySerialNo" required
+          >DISPLAY SERIAL NO.<input type="text" name="displaySerialNo" required
         /></label>
         <label
-          >Display Last Calibration Date<input
+          >DISPLAY LAST CALIBRATION DATE<input
             type="date"
             name="displayLastCalibrationDate"
             required
         /></label>
         <label
-          >Display Calibration Valid Upto<input
+          >DISPLAY CALIBRATION VALID UPTO<input
             type="date"
             name="displayCalibrationValidity"
             required
@@ -265,45 +265,47 @@
 
         <!-- Tested Equipment -->
         <label
-          >Equipment Name<input type="text" name="equipmentName" required
+          >EQUIPMENT<input type="text" name="equipmentName" required
         /></label>
         <label
-          >Type of Equipment<input type="text" name="typeOfEquipment" required
+          >TYPE OF EQUIPMENT<input type="text" name="typeOfEquipment" required
         /></label>
         <label
-          >Equipment Part No.<input type="text" name="equipmentPartNo" required
+          >EQUIPMENT PART NO.<input type="text" name="equipmentPartNo" required
         /></label>
         <label
-          >Equipment Model No.<input
+          >EQUIPMENT MODEL NO.<input
             type="text"
             name="equipmentModelNo"
             required
         /></label>
         <label
-          >Equipment Serial No.<input
+          >EQUIPMENT SERIAL NO.<input
             type="text"
             name="equipmentSerialNo"
             required
         /></label>
         <label
-          >Rated Load Capacity<input
+          >RATED LOAD CAPACITY<input
             type="number"
             name="ratedLoadCapacity"
             required
         /></label>
         <label>
-          Year of Manufacture
+          YEAR OF MANUFACTURE
           <input type="number" name="yearOfManufacture" required />
         </label>
-        <label>Location<input type="text" name="location" required /></label>
+        <label>LOCATION<input type="text" name="location" required /></label>
         <!-- <label>Test Date<input type="date" name="testDate" required /></label> -->
 
         <!-- Personnel -->
-        <label>Tested By<input type="text" name="testedBy" required /></label>
+        <label>TESTED BY<input type="text" name="testedBy" required /></label>
         <label
-          >Certified By<input type="text" name="certifiedBy" required
+          >CERTIFIED BY<input type="text" name="certifiedBy" required
         /></label>
+        <!-- <button id="saveMetadataButton">Save Data</button> -->
       </form>
+      <button id="saveMetadataButton">Save Data</button>
       <h2 id="loadValue">0.000 t</h2>
       <p id="lastTimestamp">Last Update: --</p>
       <div id="status">Status: Disconnected</div>
@@ -315,12 +317,14 @@
               <th style="width: 50%">Timestamp</th>
               <th style="width: 25%">Load (kg)</th>
               <th style="width: 25%">Load (t)</th>
+              <th style="width: 25%">Load (kN)</th>
             </tr>
           </thead>
           <tbody id="dataTableBody"></tbody>
         </table>
       </div>
       <div id="controlButtons">
+        <!-- NEW -->
         <button id="startButton">Start Load Test</button>
         <button id="stopButton">Stop Load Test</button>
         <button id="downloadButton">Download Report</button>
